@@ -18,69 +18,18 @@
 * http://creativecommons.org/licenses/by-sa/2.5/br/
 *
 ******************************************************************************/
+#include <algorithm>
+#include "../Math/Vector4.hpp"
 
-#if !defined(__PixelBuffer_HPP__)
-#define __PixelBuffer_HPP__
+#if !defined(__PIXELBUFFER_HPP__)
+#define __PIXELBUFFER_HPP__
 
 struct SDL_Surface;
 
 namespace fun {
 namespace render {
 	class SwapChain;
-
-	/**
-	 * Represents an ARGB color value.
-	 */
-	union Color
-	{
-		struct 
-		{	
-			unsigned char a;
-			unsigned char r;
-			unsigned char g;
-			unsigned char b;						
-		};
-		unsigned char argb[4];
-		unsigned value;
-
-		/**
-		 * Default constructor. 
-		 * Creates a black pixel (r=g=b=0, a=255).
-		 */
-		Color() : r(0), g(0), b(0), a(255) {}
-
-		/**
-		 * Creates a color with the given color.
-		 *
-		 * @param _value The color value in ARGB byte order.
-		 */
-		explicit Color(unsigned _value) : value(_value) {}
-
-		/**
-		 * Creates a color with the given color components. The constructor
-		 * parameter order is RGBA for convenience, but the created color
-		 * value will still be in ARGB byte order.
-		 *
-		 * @param _r Red color component.
-		 * @param _g Green color component.
-		 * @param _b Blue color component.
-		 * @param _a Alpha color component (defaults to 255).
-		 */
-		Color(unsigned char _r, unsigned char _g, unsigned char _b, 
-			unsigned char _a=255) : r(_r), g(_g), b(_b), a(_a) {}
-
-		/**
-		 * Creates a color with the given color.
-		 *
-		 * @param _value The color value in ARGB byte order.
-		 */
-		Color(unsigned char _argb[4]) 
-		{
-			for (int i = 0; i < 4; i++) argb[i] = _argb[i];			
-		}
-
-	};
-
+	
 	/**
 	 * Represents a buffer of pixels.
 	 */
@@ -88,16 +37,10 @@ namespace render {
 	{
 		private:
 			SDL_Surface* surface;
-			PixelBuffer(SDL_Surface* _surface);
-
-			void drawVerticalLine(unsigned x0, unsigned y0, 
-				unsigned deltaX, unsigned deltaY, int xDir, unsigned color);
-
-			void drawHorizontalLine(unsigned x0, unsigned y0, 
-				unsigned deltaX, unsigned deltaY, int xDir, unsigned color);
-
-			void setDirect(int x, int y, unsigned color);
-			
+			PixelBuffer(SDL_Surface* _surface);			
+			unsigned colorToUnsigned(const math::Vector4& color);
+			PixelBuffer& set(int x, int y, unsigned color);
+		
 		public:		
 			friend class SwapChain;
 
@@ -123,47 +66,53 @@ namespace render {
 			 * Direct access a given pixel. The color value is in specific 
 			 * pixel buffer format. 
 			 */
-			const unsigned int& operator() (int x, int y) const;
-
-			/**
-			 * Direct access a given pixel. The color value is in specific 
-			 * pixel buffer format.  
-			 * Does not blend colors, even if alpha != 0.
-			 */
-			unsigned int& operator() (int x, int y);
-
-			/**
-			 * Converts the given color to the internal unsigned representation
-			 */
-			unsigned colorToUnsigned(const Color& color) const;
-
-			/**
-			 * Converts the given value to a color, considering the color 
-			 * ordering of this buffer.
-			 */
-			Color unsignedToColor(const unsigned& pixelColor) const;
+			const math::Vector4 operator() (int x, int y) const;
 
 			/**
 			 * Sets the value of the given pixel to the given color.
 			 * Does not blend colors, even if alpha != 0.
 			 */
-			inline void set(int x, int y, const Color& color) 
-			{
-				(*this)(x, y) = colorToUnsigned(color);
-			}
+			PixelBuffer& set(int x, int y, const math::Vector4& color);
 
 			/**
 			 * Retrieves the color of a given pixel.
 			 */
-			inline Color get(int x, int y) const 
+			inline math::Vector4 get(int x, int y) const 
 			{ 
-				return unsignedToColor((*this)(x,y)); 
+				return (*this)(x,y); 
+			}
+
+			/**
+			 * Draws a flat line.
+			 */
+			inline void drawLine(int x0, int y0, 
+				int x1, int y1, const fun::math::Vector4& color)
+			{
+				drawLine(x0, y0, color, x1, y1, color);
 			}
 
 			/**
 			 * Draws a line.
 			 */
-			void drawLine(int x0, int y0, int x1, int y1, const Color& color);
+			void drawLine(
+				int x0, int y0, const fun::math::Vector4& color0,
+				int x1, int y1, const fun::math::Vector4& color1);
+
+			/**
+			 * Draws a flat triangle
+			 */
+			void drawTriangle(int x0, int y0,
+				int x1, int y1,
+				int x2, int y2, 
+				const math::Vector4& color);
+
+			/**
+			 * Draws a triangle
+			 */
+			void drawTriangle(
+				int x0, int y0, const fun::math::Vector4& color0,
+				int x1, int y1, const fun::math::Vector4& color1,
+				int x2, int y2, const fun::math::Vector4& color2);
 
 			/**
 			 * Returns this buffer width.
@@ -175,6 +124,11 @@ namespace render {
 			 */
 			const int& height() const;
 
+			inline void swap(PixelBuffer& other) 
+			{				
+				std::swap(surface, other.surface);
+			}
+
 			/**
 			 * Releases this buffer.
 			 */
@@ -182,4 +136,12 @@ namespace render {
 	};
 }}
 
+namespace std
+{
+	template<>
+	inline void swap<fun::render::PixelBuffer>(fun::render::PixelBuffer& one, fun::render::PixelBuffer& two)
+	{
+		one.swap(two);
+	}
+}
 #endif

@@ -2,37 +2,90 @@
 *
 * COPYRIGHT Vin�cius G. Mendon�a ALL RIGHTS RESERVED.
 *
-* This software cannot be copied, stored, distributed without  
+* This software cannot be copied, stored, distributed without
 * Vin�cius G.Mendon�a prior authorization.
 *
-* This file was made available on https://github.com/ViniGodoy/ForFun and it 
-* is free to be restributed or used under Creative Commons license 2.5 br: 
+* This file was made available on https://github.com/ViniGodoy/ForFun and it
+* is free to be restributed or used under Creative Commons license 2.5 br:
 * http://creativecommons.org/licenses/by-sa/2.5/br/
 *
 *******************************************************************************
-* Este software nao pode ser copiado, armazenado, distribuido sem autoriza��o 
+* Este software nao pode ser copiado, armazenado, distribuido sem autoriza��o
 * a priori de Vin�cius G. Mendon�a
 *
-* Este arquivo foi disponibilizado no site https://github.com/ViniGodoy/ForFun 
-* e esta livre para distribui��o seguindo a licen�a Creative Commons 2.5 br: 
+* Este arquivo foi disponibilizado no site https://github.com/ViniGodoy/ForFun
+* e esta livre para distribui��o seguindo a licen�a Creative Commons 2.5 br:
 * http://creativecommons.org/licenses/by-sa/2.5/br/
 *
 ******************************************************************************/
 
 #include "PixelBuffer.hpp"
+#include "Bresenham.hpp"
+
+#include "../Math/Vector3.hpp"
+#include "../Math/Vector4.hpp"
+
 #include <SDL/SDL.h>
 #include <algorithm>
 
 using namespace fun::render;
+using namespace fun::math;
 
+
+//-----------------------------------------------------------------------------
+//Auxiliary functions
+//-----------------------------------------------------------------------------
+void updateMinMax(const std::vector<Point>& points, int* min, int* max)
+{
+	for (unsigned i = 0; i < points.size(); ++i)
+	{
+		Point p = points[i];
+		if (p.x < min[p.y]) min[p.y] = p.x;
+		if (p.x > max[p.y]) max[p.y] = p.x;
+	}
+}
+
+void calculateEdges(int x0, int y0,
+	int x1, int y1,
+	int x2, int y2,
+	int& miny,
+	int& maxy,
+	int** edgeMin,
+	int** edgeMax)
+{
+	miny = minimum(y0, y1, y2);
+	maxy = maximum(y0, y1, y2);
+
+	int* minx = new int[maxy+1];
+	int* maxx = new int[maxy+1];
+	for (int i = miny; i <= maxy; ++i) minx[i] = std::numeric_limits<int>::max();
+	for (int i = miny; i <= maxy; ++i) maxx[i] = std::numeric_limits<int>::min();
+
+	std::vector<Point> tmp;
+
+	bresenham(x0, y0, x1, y1, tmp);
+	updateMinMax(tmp, minx, maxx);
+
+	bresenham(x1, y1, x2, y2, tmp);
+	updateMinMax(tmp, minx, maxx);
+
+	bresenham(x2, y2, x0, y0, tmp);
+	updateMinMax(tmp, minx, maxx);
+	*edgeMin = minx;
+	*edgeMax = maxx;
+}
+
+//-----------------------------------------------------------------------------
+// PixelBuffer class
+//-----------------------------------------------------------------------------
 PixelBuffer::PixelBuffer(SDL_Surface* _surface)
 	: surface(_surface)
-{	
+{
 }
 
 PixelBuffer::PixelBuffer(int w, int h)
-{	
-	SDL_PixelFormat *vf = SDL_GetVideoInfo()->vfmt;		
+{
+	SDL_PixelFormat *vf = SDL_GetVideoInfo()->vfmt;
 	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32,
 		0xFF0000, 0xFF00, 0xFF, 0xFF000000);
 }
@@ -55,123 +108,151 @@ PixelBuffer& PixelBuffer::operator =(const PixelBuffer& other)
 	return *this;
 }
 
-const unsigned int& PixelBuffer::operator() (int x, int y) const
+const Vector4 PixelBuffer::operator() (int x, int y) const
 {
-	return ((Uint32*)surface->pixels)[(y * surface->w) + x];
-}
+	unsigned pixelColor = ((Uint32*)surface->pixels)[(y * surface->w) + x];
+	float factor = 1 / 255.0f;
 
-unsigned int& PixelBuffer::operator() (int x, int y)
-{
-	return ((Uint32*)surface->pixels)[(y * surface->w) + x];
-}
-
-unsigned PixelBuffer::colorToUnsigned(const Color& color) const
-{
-	unsigned finalColor = (color.a >> surface->format->Aloss) << surface->format->Ashift;
-	finalColor |= (color.r >> surface->format->Rloss) << surface->format->Rshift;
-	finalColor |= (color.g >> surface->format->Gloss) << surface->format->Gshift;
-	finalColor |= (color.b >> surface->format->Bloss) << surface->format->Bshift;
-	return finalColor;
-}
-
-Color PixelBuffer::unsignedToColor(const unsigned& pixelColor) const
-{
-	Color color(0U);
 	unsigned int temp = 0;
-	unsigned int pixel = *((Uint32*)surface->pixels);
 
 	SDL_PixelFormat* fmt = surface->format;
 
 	/* Get Red component */
 	temp = pixelColor & fmt->Rmask;  /* Isolate red component */
-	temp = temp >> fmt->Rshift; /* Shift it down to 8-bit */
-	temp = temp << fmt->Rloss;  /* Expand to a full 8-bit number */
-	color.r = static_cast<unsigned char>(temp);
+	temp >>= fmt->Rshift;			 /* Shift it down to 8-bit */
+	temp <<= fmt->Rloss;			 /* Expand to a full 8-bit number */
+	float r = temp * factor;
 
 	/* Get Green component */
 	temp = pixelColor & fmt->Gmask;  /* Isolate red component */
-	temp = temp >> fmt->Gshift; /* Shift it down to 8-bit */
-	temp = temp << fmt->Gloss;  /* Expand to a full 8-bit number */
-	color.g = static_cast<unsigned char>(temp);
+	temp >>= fmt->Gshift;			 /* Shift it down to 8-bit */
+	temp <<= fmt->Gloss;			 /* Expand to a full 8-bit number */
+	float g = temp * factor;
 
 	/* Get Blue component */
 	temp = pixelColor & fmt->Bmask;  /* Isolate red component */
-	temp = temp >> fmt->Bshift; /* Shift it down to 8-bit */
-	temp = temp << fmt->Bloss;  /* Expand to a full 8-bit number */
-	color.b = static_cast<unsigned char>(temp);
+	temp >>= fmt->Bshift;			 /* Shift it down to 8-bit */
+	temp <<= fmt->Bloss;			 /* Expand to a full 8-bit number */
+	float b = temp * factor;
 
 	/* Get Alpha component */
 	temp = pixelColor & fmt->Amask;  /* Isolate red component */
-	temp = temp >> fmt->Ashift; /* Shift it down to 8-bit */
-	temp = temp << fmt->Aloss;  /* Expand to a full 8-bit number */
-	color.a = static_cast<unsigned char>(temp);
-	return color;
+	temp >>= fmt->Ashift;			 /* Shift it down to 8-bit */
+	temp <<= fmt->Aloss;		     /* Expand to a full 8-bit number */
+	float a = temp * factor;
+	return Vector4(r, g, b, a);
 }
 
-
-void PixelBuffer::drawHorizontalLine(unsigned x0, unsigned y0, unsigned deltaX, unsigned deltaY, int xDir, unsigned color)
+unsigned PixelBuffer::colorToUnsigned(const Vector4& color)
 {
-	int deltaYx2 = static_cast<int>(deltaY * 2);
-	int deltaYx2MinusDeltaXx2 = deltaYx2 - static_cast<int>(deltaX * 2);
-	int errorTerm = deltaYx2 - static_cast<int>(deltaX);
+	int r = roundToInt(color.r() * 255);
+	int g = roundToInt(color.g() * 255);
+	int b = roundToInt(color.b() * 255);
+	int a = roundToInt(color.a() * 255);
 
-	(*this)(x0, y0) = color;
-	while (deltaX--)
-	{
-		if (errorTerm < 0) 
-			errorTerm += deltaYx2;
-		else
-		{
-			y0++;
-			errorTerm += deltaYx2MinusDeltaXx2;
-		}		
-			
-		x0 += xDir;
-		(*this)(x0, y0) = color;
-	}
+	unsigned finalColor = ((a >>= surface->format->Aloss) <<= surface->format->Ashift);
+	finalColor |= ((r >>= surface->format->Rloss) <<= surface->format->Rshift);
+	finalColor |= ((g >>= surface->format->Gloss) <<= surface->format->Gshift);
+	finalColor |= ((b >>= surface->format->Bloss) <<= surface->format->Bshift);
+	return finalColor;
 }
 
-void PixelBuffer::drawVerticalLine(unsigned x0, unsigned y0, unsigned deltaX, unsigned deltaY, int xDir, unsigned color)
+PixelBuffer& PixelBuffer::set(int x, int y, const Vector4& color)
 {
-	int deltaXx2 = static_cast<int>(deltaX * 2);
-	int deltaXx2MinusDeltaYx2 = deltaXx2 - static_cast<int>(deltaY * 2);
-	int errorTerm = deltaXx2 - static_cast<int>(deltaY);
+	return set(x, y, colorToUnsigned(color));
+}
 
-	(*this)(x0, y0) = color;
-	while (deltaY--)
+PixelBuffer& PixelBuffer::set(int x, int y, unsigned color)
+{
+	((Uint32*)surface->pixels)[(y * surface->w) + x] = color;
+	return (*this);
+}
+
+void PixelBuffer::drawLine(
+	int x0, int y0, const Vector4& c0,
+	int x1, int y1, const Vector4& c1)
+{
+	Vector4 color0(c0);
+	Vector4 color1(c1);
+
+	std::vector<Point> points;
+
+	if (bresenham(x0, y0, x1, y1, points))
+		std::swap(color0, color1);
+
+	//Flat line
+	if (color0 == color1)
 	{
-		if (errorTerm < 0) 
-			errorTerm += deltaXx2;
-		else
-		{
-			x0 += xDir;
-			errorTerm += deltaXx2MinusDeltaYx2;
-		}		
-			
-		y0++;
-		(*this)(x0, y0) = color;
+		unsigned color = colorToUnsigned(color0);
+		for (unsigned i = 0; i < points.size(); ++i)
+			set(points[i].x, points[i].y, color);
+		return;
+	}
+
+	//Shaded line
+	Vector4 colorStep = (color1 - color0) / static_cast<float>(points.size());
+	Vector4 color(color0);
+
+	for (unsigned i = 0; i < points.size(); ++i)
+	{
+		set(points[i].x, points[i].y, color);
+		color += colorStep;
 	}
 }
 
-void PixelBuffer::drawLine(int x0, int y0, int x1, int y1, const Color& color)
-{	
-	//Make sure y is positive
-	if (y0 > y1) 
+/**
+* Draws a flat triangle
+*/
+void PixelBuffer::drawTriangle(int x0, int y0,
+	int x1, int y1,
+	int x2, int y2,
+	const Vector4& color)
+{
+	int miny, maxy;
+	int* minx, *maxx;
+	calculateEdges(x0, y0, x1, y1, x2, y2, miny, maxy, &minx, &maxx);
+	unsigned c = colorToUnsigned(color);
+	for (int y = miny; y <= maxy; ++y)
+		for (int x = minx[y]; x <= maxx[y]; ++x)
+			set(x, y, c);
+
+	delete [] minx;
+	delete [] maxx;
+}
+
+
+
+/**
+	* Draws a triangle
+	*/
+void PixelBuffer::drawTriangle(
+	int x0, int y0, const Vector4& color0,
+	int x1, int y1, const Vector4& color1,
+	int x2, int y2, const Vector4& color2)
+{
+	int miny, maxy;
+	int* minx, *maxx;
+
+	calculateEdges(x0, y0, x1, y1, x2, y2, miny, maxy, &minx, &maxx);
+	for (int y = miny; y <= maxy; ++y)
 	{
-		std::swap(y0, y1);
-		std::swap(x0, x1);
+		Vector3 b = barycenter2d(x0, y0, x1, y1, x2, y2, minx[y], y);
+		Vector4 minColor = color0 * b.x() + color1 * b.y() + color2 * b.z();
+
+		b = barycenter2d(x0, y0, x1, y1, x2, y2, maxx[y], y);
+		Vector4 maxColor = color0 * b.x() + color1 * b.y() + color2 * b.z();
+
+		Vector4 factor = (maxColor - minColor) / (maxx[y] - minx[y]);
+
+		for (int x = minx[y]; x <= maxx[y]; ++x)
+		{
+			set(x, y, minColor);
+			minColor += factor;
+		}
 	}
 
-	//Calculate deltas, x direction and color
-	int deltaX = abs(x1 - x0);
-	int deltaY = y1 - y0;
-	int xDir = x1 > x0 ? 1 : -1;
-	unsigned pixelColor = colorToUnsigned(color);
-	
-	if (deltaX > deltaY)
-		drawHorizontalLine(x0, y0, deltaX, deltaY, xDir, pixelColor);
-	else
-		drawVerticalLine(x0, y0, deltaX, deltaY, xDir, pixelColor);
+	delete [] minx;
+	delete [] maxx;
 }
 
 const int& PixelBuffer::width() const
@@ -185,7 +266,7 @@ const int& PixelBuffer::height() const
 }
 
 PixelBuffer::~PixelBuffer()
-{	
+{
 	if (surface != SDL_GetVideoSurface())
 		SDL_FreeSurface(surface);
 }

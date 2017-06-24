@@ -19,26 +19,23 @@
 *
 ******************************************************************************/
 
-#if !defined(__SWAPCHAIN_HPP__)
-#define __SWAPCHAIN_HPP__
+#if !defined(__COLOR_HPP__)
+#define __COLOR_HPP__
 
-#include "PixelBuffer.hpp"
+#include "../Math/Vector4.hpp"
 
 namespace fun {
 namespace render {
-	class SwapChain
-	{
-		private:
-			PixelBuffer* buffer;
-			SwapChain(const SwapChain& other);
-			SwapChain& operator=(const SwapChain& other);
+	static const math::Vector4 BLACK(0,0,0);
+	static const math::Vector4 BLUE(0,0,1);
+	static const math::Vector4 GREEN(0,1,0);
+	static const math::Vector4 CYAN(0,1,1);
+	static const math::Vector4 RED(1,0,0);
+	static const math::Vector4 MAGENTA(1,0,1);
+	static const math::Vector4 YELLOW(1,1,0);
+	static const math::Vector4 WHITE(1,1,1);
 
-		public:
-			SwapChain(int w, int h, bool fullscreen=true);
-			PixelBuffer& backBuffer();
-			void flip();
-			~SwapChain();
-	};
-}}; 
-
+	static const math::Vector4 PURE_COLORS[8] = {BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, YELLOW, WHITE};
+}
+}
 #endif

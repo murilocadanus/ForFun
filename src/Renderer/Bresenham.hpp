@@ -19,26 +19,27 @@
 *
 ******************************************************************************/
 
-#if !defined(__SWAPCHAIN_HPP__)
-#define __SWAPCHAIN_HPP__
+#pragma once
 
-#include "PixelBuffer.hpp"
+#include <vector>
 
 namespace fun {
 namespace render {
-	class SwapChain
+	struct Point
 	{
-		private:
-			PixelBuffer* buffer;
-			SwapChain(const SwapChain& other);
-			SwapChain& operator=(const SwapChain& other);
+		int x;
+		int y;
 
-		public:
-			SwapChain(int w, int h, bool fullscreen=true);
-			PixelBuffer& backBuffer();
-			void flip();
-			~SwapChain();
+		Point() : x(0), y(0) {}
+		Point(int x0, int y0) : x(x0), y(y0) {}
+
+		void set(int x, int y)
+		{
+			this->x = x;
+			this->y = y;
+		}
 	};
-}}; 
 
-#endif
+	bool bresenham(int x0, int y0, int x1, int y1, std::vector<Point>& points);
+}
+}
