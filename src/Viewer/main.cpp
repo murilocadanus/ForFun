@@ -1,26 +1,26 @@
 /******************************************************************************
 *
-* COPYRIGHT Vinícius G. Mendonça ALL RIGHTS RESERVED.
+* COPYRIGHT Vinï¿½cius G. Mendonï¿½a ALL RIGHTS RESERVED.
 *
 * This software cannot be copied, stored, distributed without  
-* Vinícius G.Mendonça prior authorization.
+* Vinï¿½cius G.Mendonï¿½a prior authorization.
 *
 * This file was made available on https://github.com/ViniGodoy/ForFun and it 
 * is free to be restributed or used under Creative Commons license 2.5 br: 
 * http://creativecommons.org/licenses/by-sa/2.5/br/
 *
 *******************************************************************************
-* Este software nao pode ser copiado, armazenado, distribuido sem autorização 
-* a priori de Vinícius G. Mendonça
+* Este software nao pode ser copiado, armazenado, distribuido sem autorizaï¿½ï¿½o 
+* a priori de Vinï¿½cius G. Mendonï¿½a
 *
 * Este arquivo foi disponibilizado no site https://github.com/ViniGodoy/ForFun 
-* e esta livre para distribuição seguindo a licença Creative Commons 2.5 br: 
+* e esta livre para distribuiï¿½ï¿½o seguindo a licenï¿½a Creative Commons 2.5 br: 
 * http://creativecommons.org/licenses/by-sa/2.5/br/
 *
 ******************************************************************************/
 
-#include <Renderer\SwapChain.hpp>
-#include <SDL.h>
+#include "../Renderer/SwapChain.hpp"
+#include <SDL/SDL.h>
 #include <iostream>
 
 using namespace fun::render;
