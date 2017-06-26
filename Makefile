@@ -1,4 +1,4 @@
-OBJS = main.o SwapChain.o PixelBuffer.o Bresenham.o Vector3.o Vector4.o
+OBJS = ./bin/main.o ./bin/SwapChain.o ./bin/PixelBuffer.o ./bin/Bresenham.o ./bin/Vector3.o ./bin/Vector4.o
 CC = g++
 DEBUG = -g
 CFLAGS = -Wall -c $(DEBUG)
@@ -8,25 +8,25 @@ LIBS = -lSDL -lSDLmain -framework cocoa
 all : ForFun
 
 ForFun : $(OBJS)
-	$(CC) $(LFLAGS) $(LIBS) $(HEADERS) $(OBJS) -o ForFun
+	$(CC) $(LFLAGS) $(LIBS) $(OBJS) -o bin/ForFun
 
-Vector4.o: src/Math/Vector4.hpp src/Math/Vector4.cpp
-	$(CC) $(CFLAGS) src/Math/Vector4.cpp
+./bin/Vector4.o: src/Math/Vector4.hpp src/Math/Vector4.cpp
+	$(CC) $(CFLAGS) src/Math/Vector4.cpp -o ./bin/Vector4.o
 
-Vector3.o: src/Math/Vector3.hpp src/Math/Vector3.cpp
-	$(CC) $(CFLAGS) src/Math/Vector3.cpp
+./bin/Vector3.o: src/Math/Vector3.hpp src/Math/Vector3.cpp
+	$(CC) $(CFLAGS) src/Math/Vector3.cpp -o ./bin/Vector3.o
 
-Bresenham.o: src/Renderer/Bresenham.hpp src/Renderer/Bresenham.cpp
-	$(CC) $(CFLAGS) src/Renderer/Bresenham.cpp
+./bin/Bresenham.o: src/Renderer/Bresenham.hpp src/Renderer/Bresenham.cpp
+	$(CC) $(CFLAGS) src/Renderer/Bresenham.cpp -o ./bin/Bresenham.o
 
-PixelBuffer.o: src/Renderer/Bresenham.hpp src/Renderer/PixelBuffer.hpp src/Renderer/PixelBuffer.cpp
-	$(CC) $(CFLAGS) src/Renderer/PixelBuffer.cpp
+./bin/PixelBuffer.o: src/Renderer/Bresenham.hpp src/Renderer/PixelBuffer.hpp src/Renderer/PixelBuffer.cpp
+	$(CC) $(CFLAGS) src/Renderer/PixelBuffer.cpp -o ./bin/PixelBuffer.o
 
-SwapChain.o: src/Renderer/SwapChain.hpp src/Renderer/PixelBuffer.hpp src/Renderer/SwapChain.cpp
-	$(CC) $(CFLAGS) src/Renderer/SwapChain.cpp
+./bin/SwapChain.o: src/Renderer/SwapChain.hpp src/Renderer/PixelBuffer.hpp src/Renderer/SwapChain.cpp
+	$(CC) $(CFLAGS) src/Renderer/SwapChain.cpp -o ./bin/SwapChain.o
 
-main.o : src/Renderer/SwapChain.hpp src/Viewer/main.cpp src/Renderer/Color.hpp src/Math/Vector3.hpp
-	$(CC) $(CFLAGS) src/Viewer/main.cpp
+./bin/main.o : src/Renderer/SwapChain.hpp src/Viewer/main.cpp src/Renderer/Color.hpp
+	$(CC) $(CFLAGS) src/Viewer/main.cpp -o ./bin/main.o
 
 clean:
-	rm *.o ForFun
+	rm -f ./bin/*.o ./bin/ForFun
